@@ -1,4 +1,5 @@
 const reportModel = require('../models/reportModel');
+const cloudinary = require('../config/cloudinary');
 
 // API: Ambil semua data laporan (Untuk Dashboard & Peta)
 const getReportsAPI = async (req, res) => {
@@ -28,7 +29,12 @@ const getReportsAPI = async (req, res) => {
 const createReportAPI = async (req, res) => {
   try {
     const { jenis, deskripsi, lat, lng } = req.body;
-    const fotoPath = req.file ? `/uploads/${req.file.filename}` : null;
+    let fotoPath = null;
+
+if (req.file) {
+  const uploadResult = await uploadToCloudinary(req.file.buffer);
+  fotoPath = uploadResult.secure_url;
+}
 
     // Siapkan objek data
     const newReport = {
@@ -77,6 +83,23 @@ const updateStatusAPI = async (req, res) => {
     console.error("Error update status:", error);
     res.status(500).json({ success: false, message: 'Gagal memperbarui status.' });
   }
+};
+
+const uploadToCloudinary = (fileBuffer) => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'smartroad/laporan',
+        resource_type: 'image'
+      },
+      (error, result) => {
+        if (error) return reject(error);
+        resolve(result);
+      }
+    );
+
+    stream.end(fileBuffer);
+  });
 };
 
 module.exports = {

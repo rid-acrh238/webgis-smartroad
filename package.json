@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+     "start": "node server.js",
+     "build": "npm run build:css",
+     "build:css": "tailwindcss -i ./src/input.css -o ./public/output.css",
+     "watch:css": "tailwindcss -i ./src/input.css -o ./public/output.css --watch",
+     "dev": "concurrently \"npm run watch:css\" \"nodemon server.js\""
   },
   "keywords": [],
   "author": "",
@@ -12,11 +16,15 @@
   "type": "commonjs",
   "devDependencies": {
     "autoprefixer": "^10.5.0",
+    "concurrently": "^10.0.3",
+    "nodemon": "^3.1.14",
     "postcss": "^8.5.14",
     "tailwindcss": "^3.4.19"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "cloudinary": "^2.10.0",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.1.1",

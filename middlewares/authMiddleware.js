@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = 'supersecretkey_smartroad'; // Di produksi, gunakan env variable
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey_smartroad'; // Di produksi, gunakan env variable
 
 const verifyBearerToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -11,7 +11,7 @@ const verifyBearerToken = (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    const verified = jwt.verify(token, JWT_SECRET);
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
     req.user = verified;
     next();
   } catch (error) {

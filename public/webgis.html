@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="id" class="transition-colors duration-300">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mode WebGIS - SmartRoad Bogor</title>
+  <link rel="stylesheet" href="output.css">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    #webgisMap {
+      height: calc(100vh - 72px);
+      min-height: 520px;
+      width: 100%;
+      z-index: 0;
+    }
+
+    .leaflet-popup-content-wrapper {
+      border-radius: 14px;
+    }
+
+    .leaflet-popup-content {
+      margin: 12px;
+    }
+
+    .webgis-panel {
+      height: calc(100vh - 72px);
+      overflow-y: auto;
+    }
+
+    @media (max-width: 1023px) {
+      #webgisMap {
+        height: 65vh;
+      }
+
+      .webgis-panel {
+        height: auto;
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans overflow-hidden">
+
+  <!-- Topbar -->
+  <header class="h-[72px] bg-white border-b border-slate-200 shadow-sm flex items-center justify-between px-4 sm:px-6">
+    <div class="flex items-center gap-3">
+      <a href="/dashboard" class="p-2 rounded-xl hover:bg-slate-100 text-slate-500 transition-colors" title="Kembali ke Dashboard">
+        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+      </a>
+      <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+        <i data-lucide="map" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h1 class="text-lg sm:text-xl font-bold text-slate-900">Mode WebGIS SmartRoad</h1>
+        <p class="text-xs sm:text-sm text-slate-500">Pemetaan titik risiko jalan dan trotoar Kota Bogor</p>
+      </div>
+    </div>
+
+    <div class="hidden sm:flex items-center gap-2">
+      <a href="/SmartRoad" target="_blank" class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 text-white px-4 py-2 text-sm font-semibold hover:bg-indigo-700 transition-colors">
+        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+        Tambah Laporan
+      </a>
+      <button onclick="fitToReports()" class="inline-flex items-center gap-2 rounded-xl bg-slate-100 text-slate-700 px-4 py-2 text-sm font-semibold hover:bg-slate-200 transition-colors">
+        <i data-lucide="maximize" class="w-4 h-4"></i>
+        Fokus Peta
+      </button>
+    </div>
+  </header>
+
+  <main class="grid grid-cols-1 lg:grid-cols-[320px_1fr]">
+    <!-- Panel Filter -->
+    <aside class="webgis-panel bg-white border-r border-slate-200 p-4 sm:p-5 space-y-5 order-2 lg:order-1">
+
+      <section class="space-y-3">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Filter Laporan</h2>
+          <p class="text-sm text-slate-500">Pilih data yang ingin ditampilkan pada peta.</p>
+        </div>
+
+        <div>
+          <label for="searchInput" class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Cari laporan</label>
+          <div class="relative">
+            <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+            <input id="searchInput" type="text" placeholder="ID, lokasi, deskripsi..." class="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div>
+          <label for="kategoriFilter" class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Kategori</label>
+          <select id="kategoriFilter" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+            <option value="all">Semua kategori</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="statusFilter" class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Status</label>
+          <select id="statusFilter" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+            <option value="all">Semua status</option>
+            <option value="Menunggu">Menunggu</option>
+            <option value="Proses">Proses</option>
+            <option value="Selesai">Selesai</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="risikoFilter" class="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Tingkat risiko</label>
+          <select id="risikoFilter" class="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+            <option value="all">Semua risiko</option>
+            <option value="Tinggi">Risiko tinggi</option>
+            <option value="Sedang">Risiko sedang</option>
+            <option value="Rendah">Risiko rendah</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="applyFilters()" class="rounded-xl bg-indigo-600 text-white px-4 py-2.5 text-sm font-semibold hover:bg-indigo-700 transition-colors">
+            Terapkan
+          </button>
+          <button onclick="resetFilters()" class="rounded-xl bg-slate-100 text-slate-700 px-4 py-2.5 text-sm font-semibold hover:bg-slate-200 transition-colors">
+            Reset
+          </button>
+        </div>
+      </section>
+
+      <!-- Stats -->
+      <section class="grid grid-cols-2 gap-3">
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <p class="text-xs text-slate-500 font-medium">Data tampil</p>
+          <p id="countShown" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+          <p class="text-xs text-slate-500 font-medium">Total data</p>
+          <p id="countTotal" class="text-2xl font-bold text-slate-900 mt-1">0</p>
+        </div>
+      </section>
+
+      <!-- Legend -->
+      <section class="rounded-2xl border border-slate-200 bg-white p-4">
+        <h3 class="font-bold text-sm text-slate-900 mb-3">Legenda Risiko</h3>
+        <div class="space-y-3 text-sm">
+          <div class="flex items-center justify-between gap-2">
+            <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-500"></span> Tinggi</span>
+            <span class="text-xs text-slate-500">butuh prioritas</span>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-orange-500"></span> Sedang</span>
+            <span class="text-xs text-slate-500">dipantau</span>
+          </div>
+          <div class="flex items-center justify-between gap-2">
+            <span class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-green-500"></span> Rendah</span>
+            <span class="text-xs text-slate-500">selesai/aman</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- List -->
+      <section>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="font-bold text-sm text-slate-900">Daftar Titik</h3>
+          <button onclick="fetchReports()" class="text-indigo-600 text-xs font-semibold hover:underline">Muat ulang</button>
+        </div>
+        <div id="reportList" class="space-y-2">
+          <div class="text-sm text-slate-500 bg-slate-50 rounded-xl p-4 text-center">Memuat data...</div>
+        </div>
+      </section>
+    </aside>
+
+    <!-- Map -->
+    <section class="relative order-1 lg:order-2">
+      <div id="webgisMap"></div>
+
+      <div class="absolute top-4 left-4 z-[500] bg-white/95 backdrop-blur rounded-2xl shadow-lg border border-slate-200 p-3 hidden md:block">
+        <p class="text-xs text-slate-500 font-medium">Mode aktif</p>
+        <p class="text-sm font-bold text-slate-900 flex items-center gap-1">
+          <i data-lucide="layers" class="w-4 h-4 text-indigo-600"></i>
+          Persebaran Risiko
+        </p>
+      </div>
+
+      <a href="/SmartRoad" target="_blank" class="sm:hidden absolute bottom-4 right-4 z-[500] rounded-full bg-indigo-600 text-white p-4 shadow-xl">
+        <i data-lucide="plus" class="w-6 h-6"></i>
+      </a>
+    </section>
+  </main>
+
+  <script>
+    lucide.createIcons();
+
+    const token = sessionStorage.getItem('adminToken');
+    if (!token) {
+      window.location.href = '/login';
+    }
+
+    const map = L.map('webgisMap', {
+      zoomControl: true
+    }).setView([-6.5971, 106.8060], 13);
+
+    const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const humanitarianLayer = L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors, HOT'
+    });
+
+    L.control.layers({
+      'OpenStreetMap': osmLayer,
+      'OSM Humanitarian': humanitarianLayer
+    }).addTo(map);
+
+    const markerGroup = L.layerGroup().addTo(map);
+    let masterReports = [];
+    let currentReports = [];
+    const markerIndex = new Map();
+
+    function getRiskLevel(report) {
+      if (report.status === 'Selesai') return 'Rendah';
+      const jenis = (report.jenis || '').toLowerCase();
+
+      if (jenis.includes('jalan') || jenis.includes('aspal')) return 'Tinggi';
+      if (jenis.includes('trotoar') || jenis.includes('genangan') || jenis.includes('saluran')) return 'Sedang';
+
+      return report.status === 'Menunggu' ? 'Sedang' : 'Rendah';
+    }
+
+    function getRiskColor(risk) {
+      if (risk === 'Tinggi') return '#ef4444';
+      if (risk === 'Sedang') return '#f97316';
+      return '#22c55e';
+    }
+
+    function getStatusBadge(status) {
+      if (status === 'Selesai') return 'background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;';
+      if (status === 'Proses') return 'background:#fffbeb;color:#b45309;border:1px solid #fde68a;';
+      return 'background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;';
+    }
+
+    function createMarker(report) {
+      const risk = getRiskLevel(report);
+      const color = getRiskColor(risk);
+
+      const marker = L.circleMarker(report.koordinat, {
+        radius: 9,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: color,
+        fillOpacity: 0.9
+      });
+
+      const fotoHtml = report.foto
+        ? `<img src="${report.foto}" alt="Foto laporan" style="width:100%;height:120px;object-fit:cover;border-radius:10px;margin:8px 0;">`
+        : '';
+
+      marker.bindPopup(`
+        <div style="font-family:Inter,Arial,sans-serif;min-width:230px;max-width:280px;">
+          <div style="display:flex;align-items:start;justify-content:space-between;gap:8px;">
+            <div>
+              <strong style="font-size:14px;color:#0f172a;display:block;margin-bottom:2px;">${report.jenis || 'Laporan Kerusakan'}</strong>
+              <span style="font-size:11px;color:#64748b;">${report.id || '-'}</span>
+            </div>
+            <span style="font-size:11px;padding:4px 8px;border-radius:999px;white-space:nowrap;${getStatusBadge(report.status)}">${report.status || '-'}</span>
+          </div>
+
+          ${fotoHtml}
+
+          <p style="font-size:12px;line-height:1.5;color:#475569;margin:8px 0;">${report.deskripsi || '-'}</p>
+
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+            <span style="font-size:11px;background:${color};color:white;border-radius:999px;padding:4px 8px;">Risiko ${risk}</span>
+            <span style="font-size:11px;background:#f1f5f9;color:#334155;border-radius:999px;padding:4px 8px;">${formatDate(report.tanggal)}</span>
+          </div>
+
+          <div style="margin-top:10px;">
+            <a href="/kelola?id=${encodeURIComponent(report.id)}" style="display:inline-block;text-decoration:none;background:#4f46e5;color:white;border-radius:10px;padding:7px 10px;font-size:12px;font-weight:700;">Kelola Laporan</a>
+          </div>
+        </div>
+      `);
+
+      marker.on('click', () => highlightListItem(report.id));
+      return marker;
+    }
+
+    function formatDate(dateValue) {
+      const dateObj = new Date(dateValue);
+      if (isNaN(dateObj)) return '-';
+      return dateObj.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+
+    async function fetchReports() {
+      try {
+        const response = await fetch('/api/reports');
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || 'Gagal memuat data');
+        }
+
+        masterReports = result.data || [];
+        currentReports = [...masterReports];
+
+        populateCategoryFilter(masterReports);
+        applyFilters();
+      } catch (error) {
+        console.error(error);
+        document.getElementById('reportList').innerHTML = `
+          <div class="text-sm text-red-600 bg-red-50 rounded-xl p-4 text-center">
+            Gagal memuat data laporan.
+          </div>
+        `;
+      }
+    }
+
+    function populateCategoryFilter(reports) {
+      const select = document.getElementById('kategoriFilter');
+      const current = select.value;
+      const categories = [...new Set(reports.map(r => r.jenis).filter(Boolean))].sort();
+
+      select.innerHTML = '<option value="all">Semua kategori</option>';
+      categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        select.appendChild(option);
+      });
+
+      if (categories.includes(current)) select.value = current;
+    }
+
+    function applyFilters() {
+      const keyword = document.getElementById('searchInput').value.trim().toLowerCase();
+      const kategori = document.getElementById('kategoriFilter').value;
+      const status = document.getElementById('statusFilter').value;
+      const risiko = document.getElementById('risikoFilter').value;
+
+      currentReports = masterReports.filter(report => {
+        const haystack = [
+          report.id,
+          report.jenis,
+          report.deskripsi,
+          report.status,
+          formatDate(report.tanggal)
+        ].join(' ').toLowerCase();
+
+        const matchKeyword = !keyword || haystack.includes(keyword);
+        const matchKategori = kategori === 'all' || report.jenis === kategori;
+        const matchStatus = status === 'all' || report.status === status;
+        const matchRisiko = risiko === 'all' || getRiskLevel(report) === risiko;
+
+        return matchKeyword && matchKategori && matchStatus && matchRisiko;
+      });
+
+      renderMap(currentReports);
+      renderList(currentReports);
+      renderCounter(currentReports.length, masterReports.length);
+    }
+
+    function resetFilters() {
+      document.getElementById('searchInput').value = '';
+      document.getElementById('kategoriFilter').value = 'all';
+      document.getElementById('statusFilter').value = 'all';
+      document.getElementById('risikoFilter').value = 'all';
+      applyFilters();
+    }
+
+    function renderCounter(shown, total) {
+      document.getElementById('countShown').textContent = shown;
+      document.getElementById('countTotal').textContent = total;
+    }
+
+    function renderMap(reports) {
+      markerGroup.clearLayers();
+      markerIndex.clear();
+
+      reports.forEach(report => {
+        if (!report.koordinat || report.koordinat.length !== 2 || report.koordinat.some(Number.isNaN)) return;
+
+        const marker = createMarker(report);
+        marker.addTo(markerGroup);
+        markerIndex.set(report.id, marker);
+      });
+
+      setTimeout(() => map.invalidateSize(), 120);
+    }
+
+    function renderList(reports) {
+      const list = document.getElementById('reportList');
+
+      if (reports.length === 0) {
+        list.innerHTML = '<div class="text-sm text-slate-500 bg-slate-50 rounded-xl p-4 text-center">Tidak ada laporan sesuai filter.</div>';
+        return;
+      }
+
+      list.innerHTML = reports.map(report => {
+        const risk = getRiskLevel(report);
+        const color = getRiskColor(risk);
+
+        return `
+          <button id="item-${report.id}" onclick="openReportMarker('${report.id}')" class="w-full text-left rounded-2xl border border-slate-200 bg-white p-3 hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <p class="font-bold text-sm text-slate-900">${report.jenis || '-'}</p>
+                <p class="text-xs text-slate-500">${report.id || '-'} · ${formatDate(report.tanggal)}</p>
+              </div>
+              <span style="background:${color};" class="shrink-0 text-white text-[10px] px-2 py-1 rounded-full font-bold">${risk}</span>
+            </div>
+            <p class="text-xs text-slate-600 mt-2 line-clamp-2">${report.deskripsi || '-'}</p>
+            <p class="text-xs font-semibold text-indigo-600 mt-2">Status: ${report.status || '-'}</p>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function openReportMarker(id) {
+      const marker = markerIndex.get(id);
+      if (!marker) return;
+
+      map.setView(marker.getLatLng(), 17, { animate: true });
+      marker.openPopup();
+      highlightListItem(id);
+    }
+
+    function highlightListItem(id) {
+      document.querySelectorAll('[id^="item-"]').forEach(item => {
+        item.classList.remove('ring-2', 'ring-indigo-500', 'border-indigo-400');
+      });
+
+      const target = document.getElementById(`item-${id}`);
+      if (target) {
+        target.classList.add('ring-2', 'ring-indigo-500', 'border-indigo-400');
+        target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+
+    function fitToReports() {
+      const layers = markerGroup.getLayers();
+
+      if (layers.length === 0) {
+        map.setView([-6.5971, 106.8060], 13);
+        return;
+      }
+
+      const bounds = L.featureGroup(layers).getBounds();
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+
+    document.getElementById('searchInput').addEventListener('input', applyFilters);
+    document.getElementById('kategoriFilter').addEventListener('change', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('risikoFilter').addEventListener('change', applyFilters);
+
+    document.addEventListener('DOMContentLoaded', fetchReports);
+  </script>
+</body>
+</html>

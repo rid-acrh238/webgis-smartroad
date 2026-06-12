@@ -30,4 +30,8 @@ router.get('/laporan', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/laporan.html'));
 });
 
+router.get('/webgis', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/webgis.html'));
+});
+
 module.exports = router;

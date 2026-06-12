@@ -30,10 +30,10 @@
         <i data-lucide="layout-dashboard" class="w-5 h-5 transition-transform duration-200 group-hover:scale-110"></i>
         <span class="font-medium">Dashboard</span>
       </a>
-      <a href="/webgis" class="flex items-center gap-3 p-3 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700/50 transition-all duration-200 group">
+      <!-- <a href="#" class="flex items-center gap-3 p-3 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700/50 transition-all duration-200 group">
         <i data-lucide="map" class="w-5 h-5 transition-transform duration-200 group-hover:scale-110"></i>
-        <span class="font-medium">Peta WebGIS</span>
-      </a>
+        <span class="font-medium">Peta Laporan (GIS)</span>
+      </a> -->
       <a href="/kelola" class="flex items-center gap-3 p-3 rounded-lg text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-slate-700/50 transition-all duration-200 group">
         <i data-lucide="file-text" class="w-5 h-5 transition-transform duration-200 group-hover:scale-110"></i>
         <span class="font-medium">Kelola Laporan</span>
@@ -141,14 +141,9 @@
         <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 flex flex-col">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-lg font-bold">Peta Persebaran Risiko (WebGIS)</h2>
-            <div class="flex items-center gap-3">
-              <a href="/webgis" class="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline flex items-center gap-1">
-                Buka Mode WebGIS <i data-lucide="map" class="w-4 h-4"></i>
-              </a>
-              <a href="/SmartRoad" target="_blank" class="text-sm text-gray-500 dark:text-gray-400 font-medium hover:underline flex items-center gap-1">
-                Tambah <i data-lucide="plus-circle" class="w-4 h-4"></i>
-              </a>
-            </div>
+            <a href="/SmartRoad" target="_blank" class="text-sm text-indigo-600 dark:text-indigo-400 font-medium hover:underline flex items-center gap-1">
+              Tambah Laporan <i data-lucide="plus-circle" class="w-4 h-4"></i>
+            </a>
           </div>
           <div id="map" class="flex-1 rounded-xl min-h-[400px] z-0 border border-gray-200 dark:border-slate-700"></div>
         </div>

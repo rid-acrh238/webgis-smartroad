@@ -1,17 +1,23 @@
 const mysql = require('mysql2');
 
-// Buat koneksi pool (lebih optimal untuk banyak request)
+const sslConfig = process.env.DB_SSL === 'true'
+  ? {
+      ca: process.env.DB_SSL_CA
+        ? process.env.DB_SSL_CA.replace(/\\n/g, '\n')
+        : undefined
+    }
+  : undefined;
+
 const pool = mysql.createPool({
-  host: 'localhost',
-  user: 'root',      // Sesuaikan dengan user MySQL kamu
-  password: '',      // Sesuaikan dengan password MySQL kamu
-  database: 'smartroad_db',
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: Number(process.env.DB_PORT) || 3306,
+  ssl: sslConfig,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0
 });
 
-// Gunakan versi promise agar bisa pakai async/await
-const promisePool = pool.promise();
-
-module.exports = promisePool;
+module.exports = pool.promise();

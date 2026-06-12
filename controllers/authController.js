@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const adminModel = require('../models/adminModel');
 
-const JWT_SECRET = 'supersecretkey_smartroad';
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey_smartroad';
 
 const loginAdmin = async (req, res) => {
   const { username, password } = req.body;
@@ -20,12 +20,16 @@ const loginAdmin = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Username atau password salah.' });
     }
 
+    const payload = {
+  id: admin.id,
+  username: admin.username,
+  role: 'admin'
+};
+
     // 3. Jika cocok, generate JWT Token
-    const token = jwt.sign(
-      { id: admin.id, username: admin.username, role: 'admin' }, 
-      JWT_SECRET, 
-      { expiresIn: '2h' }
-    );
+    const token =jwt.sign(payload, process.env.JWT_SECRET, {
+  expiresIn: process.env.JWT_EXPIRES_IN || '1d'
+});
     
     return res.status(200).json({
       success: true,
