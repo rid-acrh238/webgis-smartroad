@@ -4,12 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "build": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/input.css -o ./public/output.css",
-    "build:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/input.css -o ./public/output.css",
-    "watch:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/input.css -o ./public/output.css --watch",
-    "dev": "concurrently \"npm run watch:css\" \"nodemon server.js\""
-  },
+  "start": "node server.js",
+  "build": "node -e \"console.log('No build step needed. CSS already committed.')\"",
+  "build:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/input.css -o ./public/output.css",
+  "watch:css": "node ./node_modules/tailwindcss/lib/cli.js -i ./src/input.css -o ./public/output.css --watch",
+  "dev": "concurrently \"npm run watch:css\" \"nodemon server.js\""
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
