@@ -233,6 +233,9 @@
               <button onclick="updateStatus('${r.id}')" class="bg-gray-100 hover:bg-indigo-50 text-indigo-600 p-1.5 rounded transition-colors" title="Simpan Status">
                 <i data-lucide="save" class="w-4 h-4"></i>
               </button>
+              <button onclick="deleteReport('${r.id}')" class="bg-red-100 hover:bg-red-200 text-red-600 p-1.5 rounded transition-colors" title="Hapus Laporan">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
             </td>
           </tr>
         `;
@@ -311,6 +314,39 @@
         alert('Terjadi kesalahan otentikasi jaringan.');
       }
     }
+
+    async function deleteReport(id) {
+  const confirmDelete = confirm('Yakin ingin menghapus laporan ini?');
+
+  if (!confirmDelete) {
+    return;
+  }
+
+  const currentToken = sessionStorage.getItem('adminToken');
+
+  try {
+    const response = await fetch(`/api/reports/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${currentToken}`
+      }
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      alert('Laporan berhasil dihapus!');
+
+      allReports = allReports.filter(r => r.id !== id);
+      applyControls();
+    } else {
+      alert(result.message || 'Gagal menghapus laporan.');
+    }
+  } catch (error) {
+    console.error('Gagal menghapus laporan:', error);
+    alert('Terjadi kesalahan saat menghapus laporan.');
+  }
+}
 
     function cetakLaporanHarian() {
       window.print();

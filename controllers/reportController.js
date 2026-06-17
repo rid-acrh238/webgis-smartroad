@@ -85,6 +85,33 @@ const updateStatusAPI = async (req, res) => {
   }
 };
 
+// API: Hapus laporan
+const deleteReportAPI = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await reportModel.deleteReport(id);
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Laporan tidak ditemukan.'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Laporan berhasil dihapus!'
+    });
+  } catch (error) {
+    console.error("Error delete laporan:", error);
+    res.status(500).json({
+      success: false,
+      message: 'Gagal menghapus laporan.'
+    });
+  }
+};
+
 const uploadToCloudinary = (fileBuffer) => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -105,5 +132,6 @@ const uploadToCloudinary = (fileBuffer) => {
 module.exports = {
   getReportsAPI,
   createReportAPI,
-  updateStatusAPI
+  updateStatusAPI,
+  deleteReportAPI
 };

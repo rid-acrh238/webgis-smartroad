@@ -12,6 +12,8 @@ router.post('/reports', uploadMiddleware.single('foto'), reportController.create
 
 // Admin
 router.put('/reports/:id/status', verifyToken, reportController.updateStatusAPI);
+router.delete('/reports/:id', verifyToken, reportController.deleteReportAPI);
+
 
 // Login admin
 router.post('/login', authController.loginAdmin);
