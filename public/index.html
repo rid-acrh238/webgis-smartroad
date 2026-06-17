@@ -403,72 +403,127 @@
   </script>
   <script src="/socket.io/socket.io.js"></script>
    <script>
-    const socket = io();
-    let notifHistory = []; 
+  let notifHistory = [];
 
-    function toggleNotif() {
-      const dropdown = document.getElementById('notif-dropdown');
-      dropdown.classList.toggle('hidden');
+  const savedKnownIds = JSON.parse(sessionStorage.getItem('knownReportIds') || '[]');
+  const knownReportIds = new Set(savedKnownIds);
+  let notifInitialized = sessionStorage.getItem('notifInitialized') === 'true';
+
+  function saveKnownReportIds() {
+    sessionStorage.setItem('knownReportIds', JSON.stringify([...knownReportIds]));
+  }
+
+  function toggleNotif() {
+    const dropdown = document.getElementById('notif-dropdown');
+    dropdown.classList.toggle('hidden');
+  }
+
+  function clearNotif() {
+    notifHistory.forEach(n => n.read = true);
+    document.getElementById('notif-dot').classList.add('hidden');
+    renderNotif();
+  }
+
+  function keHalamanKelola(idLaporan) {
+    window.location.href = `/kelola?id=${idLaporan}`;
+  }
+
+  function renderNotif() {
+    const list = document.getElementById('notif-list');
+
+    if (notifHistory.length === 0) {
+      list.innerHTML = '<div class="p-4 text-center text-sm text-gray-500 dark:text-gray-400">Belum ada aduan baru.</div>';
+      return;
     }
 
-    // Mengubah fungsi agar hanya mengubah status menjadi sudah dibaca (tidak menghapus)
-    function clearNotif() {
-      notifHistory.forEach(n => n.read = true);
-      document.getElementById('notif-dot').classList.add('hidden');
-      renderNotif();
-    }
+    list.innerHTML = notifHistory.map(n => {
+      const readStyle = n.read
+        ? 'opacity-60 bg-gray-50/50 dark:bg-slate-700/10'
+        : 'bg-white dark:bg-slate-800 font-medium';
 
-    // Fungsi untuk mengalihkan admin ke halaman kelola berdasarkan ID Laporan yang diklik
-    function keHalamanKelola(idLaporan) {
-      window.location.href = `/kelola?id=${idLaporan}`;
-    }
+      const unreadIndicator = n.read
+        ? ''
+        : '<span class="w-2 h-2 rounded-full bg-indigo-600 block shrink-0 mt-1.5"></span>';
 
-    function renderNotif() {
-      const list = document.getElementById('notif-list');
-      if (notifHistory.length === 0) {
-        list.innerHTML = '<div class="p-4 text-center text-sm text-gray-500 dark:text-gray-400">Belum ada aduan baru.</div>';
+      return `
+        <div onclick="keHalamanKelola('${n.id}')" class="p-3 border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer flex justify-between gap-2 ${readStyle}">
+          <div class="flex-1">
+            <p class="text-sm text-gray-800 dark:text-gray-200">${n.pesan}</p>
+            <div class="flex justify-between items-center mt-2">
+              <span class="text-xs px-2 py-0.5 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-md border border-red-100 dark:border-red-500/20">${n.jenis}</span>
+              <span class="text-[10px] text-gray-400">
+                <i data-lucide="clock" class="w-3 h-3 inline"></i> ${n.waktu}
+              </span>
+            </div>
+          </div>
+          ${unreadIndicator}
+        </div>
+      `;
+    }).join('');
+
+    lucide.createIcons();
+  }
+
+  function tambahNotifikasiLaporan(report) {
+    document.getElementById('notif-dot').classList.remove('hidden');
+
+    notifHistory.unshift({
+      id: report.id,
+      pesan: 'Ada aduan masyarakat baru yang masuk!',
+      jenis: report.jenis || 'Laporan Baru',
+      waktu: new Date().toLocaleTimeString('id-ID'),
+      read: false
+    });
+
+    renderNotif();
+  }
+
+  async function cekLaporanBaru() {
+    try {
+      const response = await fetch('/api/reports');
+      const result = await response.json();
+
+      if (!result.success || !Array.isArray(result.data)) {
         return;
       }
 
-      list.innerHTML = notifHistory.map(n => {
-        // Jika sudah dibaca, beri efek opasitas meredup (opacity-60)
-        const readStyle = n.read ? 'opacity-60 bg-gray-50/50 dark:bg-slate-700/10' : 'bg-white dark:bg-slate-800 font-medium';
-        const unreadIndicator = n.read ? '' : '<span class="w-2 h-2 rounded-full bg-indigo-600 block shrink-0 mt-1.5"></span>';
-        
-        return `
-          <div onclick="keHalamanKelola('${n.id}')" class="p-3 border-b border-gray-50 dark:border-slate-700/50 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer flex justify-between gap-2 ${readStyle}">
-            <div class="flex-1">
-              <p class="text-sm text-gray-800 dark:text-gray-200">${n.pesan}</p>
-              <div class="flex justify-between items-center mt-2">
-                <span class="text-xs px-2 py-0.5 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-md border border-red-100 dark:border-red-500/20">${n.jenis}</span>
-                <span class="text-[10px] text-gray-400"><i data-lucide="clock" class="w-3 h-3 inline"></i> ${n.waktu}</span>
-              </div>
-            </div>
-            ${unreadIndicator}
-          </div>
-        `;
-      }).join('');
-      
-      lucide.createIcons();
-    }
+      const reports = result.data;
 
-    socket.on('laporan_baru', (data) => {
-      document.getElementById('notif-dot').classList.remove('hidden');
-      
-      // Menyisipkan ID laporan yang dikirim dari server
-      notifHistory.unshift({
-        id: data.id,
-        pesan: data.pesan,
-        jenis: data.jenis,
-        waktu: data.waktu,
-        read: false // Status awal belum dibaca
-      });
-      renderNotif();
-      
-      if (typeof fetchDashboardData === 'function') {
-        fetchDashboardData();
+      // Saat dashboard pertama kali dibuka, data lama dianggap sudah diketahui
+      if (!notifInitialized) {
+        reports.forEach(report => knownReportIds.add(report.id));
+        saveKnownReportIds();
+        sessionStorage.setItem('notifInitialized', 'true');
+        notifInitialized = true;
+        return;
       }
-    });
-  </script>
+
+      const laporanBaru = reports.filter(report => !knownReportIds.has(report.id));
+
+      if (laporanBaru.length > 0) {
+        laporanBaru.reverse().forEach(report => {
+          tambahNotifikasiLaporan(report);
+          knownReportIds.add(report.id);
+        });
+
+        saveKnownReportIds();
+
+        if (typeof fetchDashboardData === 'function') {
+          fetchDashboardData();
+        }
+      }
+
+    } catch (error) {
+      console.error('Gagal mengecek laporan baru:', error);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    cekLaporanBaru();
+
+    // Cek laporan baru setiap 10 detik
+    setInterval(cekLaporanBaru, 10000);
+  });
+</script>
 </body>
 </html>
